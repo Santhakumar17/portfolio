@@ -21,6 +21,7 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
+            mkdir sandy-portfolio
             cd sandy-portfolio
             git pull origin main
             docker-compose down
