@@ -21,10 +21,24 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
-            mkdir sandy-portfolio
+            # Install docker-compose if not already
+            if ! command -v docker-compose &> /dev/null
+            then
+              sudo apt-get update
+              sudo apt-get install -y docker-compose
+            fi
+            
+            # Clone or pull the repo
+            if [ ! -d "sandy-portfolio" ]; then
+              git clone https://github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
+            fi
+            
             cd sandy-portfolio
             git pull origin main
-            docker-compose down
+            
+            docker-compose down || true
             docker-compose up --build -d
-            systemctl restart nginx
+            
+            # Restart nginx with sudo
+            sudo systemctl restart nginx
           EOF
