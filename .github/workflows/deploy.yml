@@ -1,65 +1,38 @@
-name: Deploy to AWS EC2
+name: Deploy to EC2
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up SSH key
+      - uses: actions/checkout@v3
+      
+      - name: Install SSH Key
         run: |
-          echo "${{ secrets.AWS_SSH_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
-
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/private_key.pem
+          chmod 600 ~/.ssh/private_key.pem
+          
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
             set -e
             cd ~
-
-            # Install docker-compose if missing
-            if ! command -v docker-compose &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y docker-compose-plugin
-            fi
-
-            # Remove non-repo folder if it exists
-            if [ -d "sandy-portfolio" ] && [ ! -d "sandy-portfolio/.git" ]; then
-              sudo rm -rf sandy-portfolio
-            fi
-
-            # Clone repo if not already present
+            
+            # Check if directory exists
             if [ ! -d "sandy-portfolio" ]; then
               git clone https://github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
             fi
-
-            cd sandy-portfolio
-
-            # Pull latest changes
-            git fetch
-            git reset --hard origin/main
-
-            # Ensure we're in the right directory with compose file
-            if [ ! -f "docker-compose.yml" ]; then
-              echo "❌ docker-compose.yml not found in $(pwd)! Exiting."
-              exit 1
-            fi
-
-            # Docker compose actions (use docker compose, not docker-compose)
-            sudo docker compose down || true
-            sudo docker compose up --build -d
-
-            # Configure passwordless sudo for nginx (run this once manually on the server first)
-            # sudo visudo -f /etc/sudoers.d/ubuntu-nginx
-            # Add: ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart nginx
             
-            # Restart nginx
-            sudo systemctl restart nginx || echo "⚠️ Nginx restart failed - check sudo permissions"
+            cd sandy-portfolio
+            git reset --hard
+            git pull origin main
+            
+            sudo docker-compose down || true
+            sudo docker-compose up --build -d
+            
+            sudo systemctl restart nginx
           EOF
