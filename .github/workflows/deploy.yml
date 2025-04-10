@@ -29,6 +29,11 @@ jobs:
               sudo apt-get install -y docker-compose
             fi
 
+            # Remove non-repo folder if it exists
+            if [ -d "sandy-portfolio" ] && [ ! -d "sandy-portfolio/.git" ]; then
+              rm -rf sandy-portfolio
+            fi
+
             # Clone repo if not already
             if [ ! -d "sandy-portfolio" ]; then
               git clone https://github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
@@ -50,5 +55,5 @@ jobs:
             docker-compose up --build -d
 
             # Restart nginx (requires passwordless sudo)
-            sudo systemctl restart nginx || echo "⚠️ Failed to restart nginx. Check sudo permissions."
+            sudo -n systemctl restart nginx || echo "⚠️ Nginx restart failed - check sudo permissions."
           EOF
