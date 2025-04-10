@@ -1,0 +1,4 @@
+Outputs:
+
+instance_private_dns = "ip-172-31-37-66.eu-north-1.compute.internal"
+instance_public_ip = "16.170.232.194"

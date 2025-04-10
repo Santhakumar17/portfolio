@@ -1,0 +1,7 @@
+- name: Configure Linux Server
+  hosts: all
+  become: true
+  roles:
+    - base
+    - docker
+    - nginx
