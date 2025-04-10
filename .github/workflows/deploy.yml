@@ -21,24 +21,34 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
-            # Install docker-compose if not already
-            if ! command -v docker-compose &> /dev/null
-            then
+            set -e
+
+            # Install docker-compose if missing
+            if ! command -v docker-compose &> /dev/null; then
               sudo apt-get update
               sudo apt-get install -y docker-compose
             fi
-            
-            # Clone or pull the repo
+
+            # Clone repo if not already
             if [ ! -d "sandy-portfolio" ]; then
               git clone https://github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
             fi
-            
+
             cd sandy-portfolio
+
+            # Make sure it's a Git repo and up-to-date
             git pull origin main
-            
+
+            # Ensure docker-compose.yml exists
+            if [ ! -f "docker-compose.yml" ]; then
+              echo "❌ docker-compose.yml not found! Exiting."
+              exit 1
+            fi
+
+            # Docker compose actions
             docker-compose down || true
             docker-compose up --build -d
-            
-            # Restart nginx with sudo
-            sudo systemctl restart nginx
+
+            # Restart nginx (requires passwordless sudo)
+            sudo systemctl restart nginx || echo "⚠️ Failed to restart nginx. Check sudo permissions."
           EOF
