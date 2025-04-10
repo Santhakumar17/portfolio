@@ -1,0 +1,17 @@
+---
+- name: Update apt packages
+  apt:
+    update_cache: yes
+
+- name: Install Docker Compose plugin
+  apt:
+    name: docker-compose-plugin
+    state: present
+
+- name: Verify Docker Compose installation
+  command: docker compose version
+  register: docker_compose_version
+
+- name: Display Docker Compose version
+  debug:
+    msg: "Installed Docker Compose version: {{ docker_compose_version.stdout }}"
