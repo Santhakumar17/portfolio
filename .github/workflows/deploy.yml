@@ -22,38 +22,44 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
             set -e
+            cd ~
 
             # Install docker-compose if missing
             if ! command -v docker-compose &> /dev/null; then
               sudo apt-get update
-              sudo apt-get install -y docker-compose
+              sudo apt-get install -y docker-compose-plugin
             fi
 
             # Remove non-repo folder if it exists
             if [ -d "sandy-portfolio" ] && [ ! -d "sandy-portfolio/.git" ]; then
-              rm -rf sandy-portfolio
+              sudo rm -rf sandy-portfolio
             fi
 
-            # Clone repo if not already
+            # Clone repo if not already present
             if [ ! -d "sandy-portfolio" ]; then
               git clone https://github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
             fi
 
             cd sandy-portfolio
 
-            # Make sure it's a Git repo and up-to-date
-            git pull origin main
+            # Pull latest changes
+            git fetch
+            git reset --hard origin/main
 
-            # Ensure docker-compose.yml exists
+            # Ensure we're in the right directory with compose file
             if [ ! -f "docker-compose.yml" ]; then
-              echo "❌ docker-compose.yml not found! Exiting."
+              echo "❌ docker-compose.yml not found in $(pwd)! Exiting."
               exit 1
             fi
 
-            # Docker compose actions
-            docker-compose down || true
-            docker-compose up --build -d
+            # Docker compose actions (use docker compose, not docker-compose)
+            sudo docker compose down || true
+            sudo docker compose up --build -d
 
-            # Restart nginx (requires passwordless sudo)
-            sudo -n systemctl restart nginx || echo "⚠️ Nginx restart failed - check sudo permissions."
+            # Configure passwordless sudo for nginx (run this once manually on the server first)
+            # sudo visudo -f /etc/sudoers.d/ubuntu-nginx
+            # Add: ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart nginx
+            
+            # Restart nginx
+            sudo systemctl restart nginx || echo "⚠️ Nginx restart failed - check sudo permissions"
           EOF
