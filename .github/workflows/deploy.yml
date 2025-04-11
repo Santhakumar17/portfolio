@@ -10,50 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up SSH key
+      - name: Add SSH key
         run: |
           echo "${{ secrets.AWS_SSH_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
-      - name: Deploy to EC2
+      - name: SSH and deploy
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << EOF
             set -e
+            cd ~
 
-            # Install docker-compose if not installed
-            if ! command -v docker-compose &> /dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y docker-compose
-            fi
-
-            # Remove non-repo folder if needed
             if [ -d "sandy-portfolio" ] && [ ! -d "sandy-portfolio/.git" ]; then
               rm -rf sandy-portfolio
             fi
 
-            # Clone repo using PAT if not already cloned
             if [ ! -d "sandy-portfolio" ]; then
-              git clone https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio.git sandy-portfolio
+              git clone https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
             fi
 
             cd sandy-portfolio
+            git pull https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio-demo.git main
 
-            # Pull latest changes
-            git pull https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio.git main
-
-            # Ensure docker-compose file exists
-            if [ ! -f "docker-compose.yml" ]; then
-              echo "❌ docker-compose.yml not found!"
-              exit 1
-            fi
-
-            # Docker actions
-            docker-compose down || true
-            docker-compose up --build -d
-
-            # Restart nginx (ensure sudo doesn’t require password)
-            sudo -n systemctl restart nginx || echo "⚠️ Nginx restart failed - check sudo permissions."
+            sudo docker-compose down || true
+            sudo docker-compose up --build -d
+            sudo systemctl restart nginx || echo "⚠️ NGINX restart failed"
           EOF
