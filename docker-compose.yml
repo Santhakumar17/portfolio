@@ -13,25 +13,25 @@ services:
     networks:
       - app-network
 
-  caddy:
-    image: caddy:latest
-    restart: unless-stopped
-    depends_on:
-      - frontend
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - app-network
+#  caddy:
+#    image: caddy:latest
+#    restart: unless-stopped
+#    depends_on:
+#      - frontend
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+#      - caddy_data:/data
+#      - caddy_config:/config
+#    networks:
+#      - app-network
 
 volumes:
   frontend_node_modules:
-  caddy_data:
-  caddy_config:
+#  caddy_data:
+#  caddy_config:
 
 networks:
   app-network:
