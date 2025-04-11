@@ -29,11 +29,11 @@ jobs:
             fi
 
             if [ ! -d "sandy-portfolio" ]; then
-              git clone https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
+              git clone https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio.git sandy-portfolio
             fi
 
             cd sandy-portfolio
-            git pull https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio-demo.git main
+            git pull https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio.git main
 
             sudo docker-compose down || true
             sudo docker-compose up --build -d
