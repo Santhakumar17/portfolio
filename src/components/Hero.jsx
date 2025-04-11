@@ -24,7 +24,7 @@ const Hero = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="flex flex-col max-w-[800px] gap-4 items-center justify-center"
         >
-          <h1 className="title md:text-4xl text-3xl">G R Sandeep</h1>
+          <h1 className="title md:text-4xl text-3xl">G R Santha Kumar</h1>
           <h2 className="text-lg font-medium bg-gradient-to-r text-transparent from-pink-500 to-blue-500 bg-clip-text transition-all duration-300 opacity-100 hover:opacity-80">
             React.js Developer
           </h2>
