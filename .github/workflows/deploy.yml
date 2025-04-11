@@ -1,38 +1,61 @@
-name: Deploy to EC2
+name: Deploy to AWS EC2
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install SSH Key
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
         run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/private_key.pem
-          chmod 600 ~/.ssh/private_key.pem
-          
+          echo "${{ secrets.AWS_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.AWS_EC2_IP }} << EOF
             set -e
-            cd ~
-            
-            # Check if directory exists
-            if [ ! -d "sandy-portfolio" ]; then
-              git clone https://github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
+
+            # Install docker-compose if missing
+            if ! command -v docker-compose &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y docker-compose
             fi
-            
+
+            # Remove non-repo folder if exists
+            if [ -d "sandy-portfolio" ] && [ ! -d "sandy-portfolio/.git" ]; then
+              rm -rf sandy-portfolio
+            fi
+
+            # Clone repo with PAT if not already
+            if [ ! -d "sandy-portfolio" ]; then
+              git clone https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio-demo.git sandy-portfolio
+            fi
+
             cd sandy-portfolio
-            git reset --hard
-            git pull origin main
-            
-            sudo docker-compose down || true
-            sudo docker-compose up --build -d
-            
-            sudo systemctl restart nginx
+
+            # Set Git config for authentication and pull latest code
+            git config user.email "${{ secrets.GH_EMAIL }}"
+            git config user.name "${{ secrets.GH_USERNAME }}"
+            git pull https://${{ secrets.GH_USERNAME }}:${{ secrets.GH_PAT }}@github.com/Santhakumar17/portfolio-demo.git main
+
+            # Ensure docker-compose.yml exists
+            if [ ! -f "docker-compose.yml" ]; then
+              echo "❌ docker-compose.yml not found! Exiting."
+              exit 1
+            fi
+
+            # Docker compose actions
+            docker-compose down || true
+            docker-compose up --build -d
+
+            # Restart nginx (requires passwordless sudo)
+            sudo -n systemctl restart nginx || echo "⚠️ Nginx restart failed - check sudo permissions."
           EOF
